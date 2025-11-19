@@ -8,7 +8,7 @@ COPY ui/ ./
 RUN pnpm run build
 
 # Stage 2: Build Backend
-FROM golang:1.24-alpine AS backend-builder
+FROM golang:1.24.9-alpine3.22 AS backend-builder
 WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o kite .
 
 # Stage 3: Final Ubuntu Image with doctl
 FROM ubuntu:24.04
-
+USER root
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -41,13 +41,6 @@ WORKDIR /app
 
 # Copy binary from backend builder
 COPY --from=backend-builder /app/kite .
-
-# Create non-root user (optional but recommended)
-RUN useradd -m -u 1000 kite && \
-    chown -R kite:kite /app
-
-# Switch to non-root user
-USER kite
 
 # Expose port
 EXPOSE 8080
